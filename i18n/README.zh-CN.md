@@ -90,7 +90,7 @@ docker compose logs -f vesim
 .\build-windows.ps1
 ```
 
-脚本会编译前端与后端，并生成 `dist\vesim_windows_amd64.zip`。解压后运行 `start-vesim.bat`，浏览器打开 `http://127.0.0.1:7575`（默认 `admin` / `admin`）。
+脚本会编译前端与后端，并生成 `dist\vesim_v2.1.35_windows_amd64.zip`（也可直接从 [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35) 下载）。解压后运行 `start-vesim.bat`，浏览器打开 `http://127.0.0.1:7575`（默认 `admin` / `admin`）。
 
 Windows 下不会发现模组：QMI/MBIM/AT、VoWiFi、USB 音频、按网卡绑定出站和 udev 热插拔都需要 Linux 且拥有 USB 直通。需要真正管理模组请使用 Docker 或二进制部署。
 

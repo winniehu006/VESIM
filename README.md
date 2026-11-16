@@ -91,7 +91,7 @@ The web console can run on Windows for UI evaluation without a Linux host or a m
 .\build-windows.ps1
 ```
 
-The script builds the frontend and the backend, then writes `dist\vesim_windows_amd64.zip`. Unzip it, run `start-vesim.bat`, and open `http://127.0.0.1:7575` (default `admin` / `admin`).
+The script builds the frontend and the backend, then writes `dist\vesim_v2.1.35_windows_amd64.zip` (also available from [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35)). Unzip it, run `start-vesim.bat`, and open `http://127.0.0.1:7575` (default `admin` / `admin`).
 
 On Windows the console starts with no devices: QMI/MBIM/AT access, VoWiFi, USB audio, host-network proxy binding and udev hot-plug require Linux with host USB access. Use the Docker or binary deployment above for modem control.
 
