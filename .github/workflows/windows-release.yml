@@ -1,0 +1,79 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to build, e.g. v2.1.36'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows-portable:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Resolve version
+        id: vars
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build portable package
+        shell: pwsh
+        run: |
+          .\build-windows.ps1 -Version "${{ steps.vars.outputs.version }}"
+
+      - name: Write checksum
+        shell: pwsh
+        run: |
+          $version = "${{ steps.vars.outputs.version }}"
+          $zip = "dist\vesim_${version}_windows_amd64.zip"
+          $sum = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          "$sum  vesim_${version}_windows_amd64.zip" |
+            Out-File -NoNewline "dist\vesim_${version}_windows_amd64.zip.sha256"
+
+      - name: Create the release when missing
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.vars.outputs.version }}"
+          gh release view "$version" || gh release create "$version" \
+            --title "VESIM $version (Windows)" \
+            --notes "Windows portable build of VESIM. Unzip and run start-vesim.bat, then open http://localhost:7575 (default admin / admin)."
+
+      - name: Upload assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.vars.outputs.version }}"
+          gh release upload "$version" \
+            "dist/vesim_${version}_windows_amd64.zip" \
+            "dist/vesim_${version}_windows_amd64.zip.sha256" \
+            --clobber

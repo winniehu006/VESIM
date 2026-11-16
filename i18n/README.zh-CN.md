@@ -24,9 +24,10 @@
 
 | | |
 | --- | --- |
-| Web | `http://YOUR_IP:7575` |
-| 默认账号 | `admin` / `admin`（弱密码会要求立刻改） |
+| Web | `http://localhost:7575` |
+| 默认账号 | `admin` / `admin`（弱密码会要求立刻修改） |
 | 数据库 | SQLite（`data/vesim.db`） |
+| 发布产物 | 仅 Windows 便携包（`vesim_*_windows_amd64.zip`） |
 
 ## 功能
 
@@ -49,51 +50,23 @@
 
 WebDAV 备份与本地清理：[归档短信、通话记录与录音](../docs/webdav-archive.md)。
 
-## 快速开始
+## 快速开始（Windows）
 
-推荐 Docker。需要 Linux、curl、Compose、host 网络、USB 权限。镜像已带 ADB、ALSA 工具、AMR/MP3 库和内嵌模组语音资源；宿主机仍需 USB 音频驱动，见[模组直拨依赖](../DOCKERHUB.md#module-voice-dependencies)。
+从[发布页](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35)下载 `vesim_v2.1.35_windows_amd64.zip`，解压后运行 `start-vesim.bat`，浏览器打开 <http://localhost:7575>（默认 `admin` / `admin`，首次登录会要求修改）。免安装、免服务、无需 Linux 主机——本分支只发布这一个 Windows 便携包。
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy.sh | sh
-```
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy.sh | VESIM_DIR=/opt/vesim sh
-```
-
-浏览器打开 `http://YOUR_IP:7575`。
-
-公网域名（解析到服务器，放行 `443/TCP` 和 `443/UDP`）：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy.sh | \
-  VESIM_DOMAIN=vesim.example.com \
-  VESIM_DIR=/opt/vesim sh
-```
-
-镜像：`winniehu006/vesim:latest`。Compose 使用 `network_mode: host`、`privileged: true`、`/dev`，数据在 `config/`、`data/`、`logs/`。见 [DOCKERHUB.md](../DOCKERHUB.md) 和 [HTTPS / WebRTC](../docs/https-webrtc.md)。
-
-飞牛 fnOS 可从[发布页](https://github.com/winniehu006/vesim/releases/tag/v2.1.35)下载 `vesim_2.1.35_fnos.fpk` 及校验文件，手动安装。包内使用固定版本的 Docker 镜像，提供桌面入口和持久化目录；[安装条件与验证范围](../packaging/fnos/README.md)中列出了仍需真机验收的项目。
-
-```bash
-docker compose ps
-docker compose logs -f vesim
-```
-
-使用 PC/SC USB 读卡器时，还需配置宿主机服务及可选 Compose 覆盖文件，见 [Docker PC/SC 说明](../DOCKERHUB.md#pcsc-smart-card-readers)。
-
-## Windows 便携版（VESIM 分支）
-
-本分支额外支持在 Windows 上以网页控制台方式运行，便于无 Linux 主机、无模组时预览界面：
+也可以自己编译：
 
 ```powershell
 .\build-windows.ps1
 ```
 
-脚本会编译前端与后端，并生成 `dist\vesim_v2.1.35_windows_amd64.zip`（也可直接从 [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35) 下载）。解压后运行 `start-vesim.bat`，浏览器打开 `http://127.0.0.1:7575`（默认 `admin` / `admin`）。
+脚本会编译前端与后端，生成 `dist\vesim_v2.1.35_windows_amd64.zip`。需要 Go 1.26+ 与 Node.js 20+，可用 `-GoBin` 指定 Go，用 `-SkipFrontend` 跳过已构建过的前端。
 
-Windows 下不会发现模组：QMI/MBIM/AT、VoWiFi、USB 音频、按网卡绑定出站和 udev 热插拔都需要 Linux 且拥有 USB 直通。需要真正管理模组请使用 Docker 或二进制部署。
+Windows 下不会发现模组：QMI/MBIM/AT、VoWiFi、USB 音频、按网卡绑定出站和 udev 热插拔都需要 Linux 且拥有 USB 直通。
 
+### 历史遗留：Linux / Docker / OpenWrt
+
+上游 HiDeck 的 Linux 相关文件仍在仓库中（`Dockerfile*`、`docker-compose*.yml`、`deploy*.sh`、`packaging/openwrt`、`packaging/fnos`、`Makefile`），它们仍是唯一能驱动真实模组硬件的部署方式，但本分支不再构建、发布或验证它们。模组部署请使用[上游 HiDeck](https://github.com/yibaiba/hideck)。
 ## MCP / AI 助手
 
 VESIM 内置远程 MCP 服务，采用 Streamable HTTP，与现有 HTTP/HTTPS 共用端口，地址为 `/mcp`，默认关闭。Agent 直接连接已经运行的 VESIM，无需在 Agent 所在机器另装 VESIM MCP 服务端。
@@ -124,37 +97,6 @@ VESIM 内置远程 MCP 服务，采用 Streamable HTTP，与现有 HTTP/HTTPS �
 | --- | --- |
 | ![命令](../docs/images/commands.jpg) | ![代理](../docs/images/console-proxy.jpg) |
 
-## 二进制
-
-安装脚本会补装 ADB、ALSA 和录音依赖，并检查 ADB 能力与宿主机 USB 音频支持。依赖未通过时，即使服务已安装，脚本也会明确报错并返回非零退出码，不会报告完整部署成功；检查不会连接或重启模组。
-
-OpenWrt 默认不装模组直拨依赖，可另装 `vesim-adb` 和 `vesim-modem-voice`。IPK/APK 安装方式及架构匹配见 [OpenWrt 打包说明](../packaging/openwrt/README.md)。
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy-binary.sh | sh
-```
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy-binary.sh | \
-  VESIM_DIR=/opt/vesim \
-  VESIM_VERSION=v2.1.35 \
-  VESIM_ARCH=linux_amd64 sh
-```
-
-| 文件 | 平台 |
-| --- | --- |
-| `vesim_v2.1.35_linux_amd64` | x86_64，glibc + UPX |
-| `vesim_v2.1.35_linux_arm64` | ARM64 / 树莓派 OS 64 位，glibc + UPX |
-| `vesim_v2.1.35_linux_armv7` | 32 位 ARM，glibc + UPX |
-| `vesim_v2.1.35_openwrt_amd64` | OpenWrt x86_64，musl 静态，不压 UPX |
-| `vesim_v2.1.35_openwrt_arm64` | OpenWrt aarch64 |
-| `vesim_v2.1.35_openwrt_armv7` | OpenWrt 32 位 ARM |
-| `vesim_v2.1.35_openwrt_dynamic_amd64` | OpenWrt x86_64，动态 musl，可使用 MP3 编码 |
-| `vesim_v2.1.35_openwrt_dynamic_arm64` | OpenWrt aarch64，动态 musl，可使用 MP3 编码 |
-| `vesim_v2.1.35_openwrt_dynamic_armv7` | OpenWrt 32 位 ARM，动态 musl，可使用 MP3 编码 |
-
-OpenWrt 只用 `openwrt_*`。包管理附件和二进制安装脚本继续使用静态版本；动态版本需要匹配的运行库，供通话 MP3 录音使用，见 [OpenWrt 打包说明](../packaging/openwrt/README.md#openwrt-dynamic-musl)。
-
 ## 配置
 
 复制 [config/config.example.yaml](../config/config.example.yaml) 为 `config/config.yaml`。
@@ -175,25 +117,37 @@ OpenWrt 只用 `openwrt_*`。包管理附件和二进制安装脚本继续使用
 
 ## 构建
 
-Go `1.26.4+`，Node.js / npm。`make build-*` 需要 UPX。
+本分支只产出 Windows 便携包：
 
-```bash
-make build-amd64    # 还有 build-arm64、build-armv7、build-all
+```powershell
+.\build-windows.ps1                              # 前端 + 后端 + dist\vesim_v2.1.35_windows_amd64.zip
+.\build-windows.ps1 -GoBin C:\go\bin -SkipFrontend
 ```
 
-```bash
-npm ci --prefix web && npm run build --prefix web
-cp -R web/dist internal/web/dist
-GOWORK=off CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-  go build -trimpath -tags "with_utls nomsgpack" -o dist/vesim_linux_amd64 ./cmd/vesim
-```
+前置条件：Go `1.26.4+`、Node.js 20+。构建为 `CGO_ENABLED=0` 加 `with_utls nomsgpack` 标签，不依赖其他工具。
+
+自检：
 
 ```bash
-npm test --prefix web && npm run typecheck --prefix web
-go test -timeout=60s ./cmd/... ./internal/... ./pkg/...
+npm test --prefix web        # 397 个前端测试
+npm run typecheck --prefix web
+go test ./cmd/... ./internal/... ./pkg/...
 ```
+
+仍可按 `GOOS=linux CGO_ENABLED=0 go build -tags "with_utls nomsgpack" -o dist/vesim_linux_amd64 ./cmd/vesim` 交叉编译 Linux 版，但本分支不发布、不验证。
 
 开发代理：`web/.env.local` 里 `VITE_API_PROXY_TARGET=http://127.0.0.1:7575`。接口文档：`/api/docs`。
+
+## 发布
+
+打 tag 并推送即可。`.github/workflows/windows-release.yml` 会在 Windows Runner 上编译 `vesim_<version>_windows_amd64.zip`（含 `.sha256`），并挂到对应 Release 上，Release 不存在时自动创建：
+
+```bash
+git tag v2.1.36
+git push origin v2.1.36
+```
+
+如果该 tag 的 Release 已存在，会用 `--clobber` 覆盖同名产物。也可手动触发：Actions → **Windows release** → Run workflow，在输入框填版本号。
 
 ## 许可
 

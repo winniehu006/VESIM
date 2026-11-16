@@ -24,9 +24,10 @@ Manage USB modems, cellular proxy, SMS, WiFi calling / IMS voice, eSIM, and sche
 
 | | |
 | --- | --- |
-| Web UI | `http://YOUR_IP:7575` |
+| Web UI | `http://localhost:7575` |
 | Default login | `admin` / `admin` (change on first sign-in) |
 | Database | SQLite (`data/vesim.db`) |
+| Release artifact | Windows portable zip (`vesim_*_windows_amd64.zip`) |
 
 ## Features
 
@@ -49,51 +50,23 @@ Modem carrier profiles: [MBN management, SIM policies and manual trial runs](doc
 
 WebDAV backup and safe local cleanup: [archive SMS, calls and recordings](docs/webdav-archive.md).
 
-## Quick start
+## Quick start (Windows)
 
-Docker (recommended). Needs Linux, curl, Docker Compose, host networking, and USB access. The image includes ADB, ALSA tools, AMR/MP3 libraries, and the embedded module-side voice runtime. The host still needs a USB audio driver; see [module voice prerequisites](DOCKERHUB.md#module-voice-dependencies).
+Download `vesim_v2.1.35_windows_amd64.zip` from [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35), unzip it anywhere, run `start-vesim.bat`, then open <http://localhost:7575> (default `admin` / `admin`, change on first sign-in). No installer, no service, no Linux host required — the Windows portable zip is the only release artifact this fork publishes.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy.sh | sh
-```
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy.sh | VESIM_DIR=/opt/vesim sh
-```
-
-Then open `http://YOUR_IP:7575`.
-
-With a public hostname (DNS A/AAAA to the host, open `443/TCP` and `443/UDP`):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy.sh | \
-  VESIM_DOMAIN=vesim.example.com \
-  VESIM_DIR=/opt/vesim sh
-```
-
-Image: `winniehu006/vesim:latest`. Compose uses `network_mode: host`, `privileged: true`, `/dev`, and persists `config/`, `data/`, `logs/`. See [DOCKERHUB.md](DOCKERHUB.md) and [HTTPS / WebRTC](docs/https-webrtc.md).
-
-For Feiniu fnOS, download `vesim_2.1.35_fnos.fpk` and its checksum from the [release page](https://github.com/winniehu006/vesim/releases/tag/v2.1.35). The package uses a pinned Docker image and provides a desktop entry and persistent app directories. See [installation and validation scope](packaging/fnos/README.md); on-device validation is still required.
-
-```bash
-docker compose ps
-docker compose logs -f vesim
-```
-
-For PC/SC USB smart-card readers, also configure the host service and optional
-Compose override described in [Docker PC/SC setup](DOCKERHUB.md#pcsc-smart-card-readers).
-
-## Windows portable (VESIM fork)
-
-The web console can run on Windows for UI evaluation without a Linux host or a modem:
+Or build it yourself:
 
 ```powershell
 .\build-windows.ps1
 ```
 
-The script builds the frontend and the backend, then writes `dist\vesim_v2.1.35_windows_amd64.zip` (also available from [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35)). Unzip it, run `start-vesim.bat`, and open `http://127.0.0.1:7575` (default `admin` / `admin`).
+The script compiles the Vue frontend and the Go backend and writes `dist\vesim_v2.1.35_windows_amd64.zip`. It needs Go 1.26+ and Node.js 20+; use `-GoBin <path>` when Go is not on `PATH`, and `-SkipFrontend` when `web/` was already built.
 
-On Windows the console starts with no devices: QMI/MBIM/AT access, VoWiFi, USB audio, host-network proxy binding and udev hot-plug require Linux with host USB access. Use the Docker or binary deployment above for modem control.
+On Windows the console starts with no devices — QMI/MBIM/AT access, VoWiFi, USB audio, host-network proxy binding and udev hot-plug need Linux with host USB access.
+
+### Legacy Linux / Docker / OpenWrt
+
+The upstream HiDeck Linux paths are still in this tree (`Dockerfile*`, `docker-compose*.yml`, `deploy*.sh`, `packaging/openwrt`, `packaging/fnos`, `Makefile`) and remain the only way to drive real modem hardware, but this fork no longer builds, publishes or tests them. Use [upstream HiDeck](https://github.com/yibaiba/hideck) for modem deployments.
 
 ## MCP / AI assistants
 
@@ -127,36 +100,6 @@ Screenshots below come from the upstream HiDeck release; the VESIM UI is identic
 | --- | --- |
 | ![Commands](docs/images/commands.jpg) | ![Proxy](docs/images/console-proxy.jpg) |
 
-## Binary install
-
-The installer also installs ADB, ALSA tools and recording libraries, then checks ADB capabilities and host USB audio support. Missing dependencies produce a nonzero exit status even if the VESIM service was installed; they are not reported as a fully successful deployment. These checks do not connect to or reboot a modem.
-
-OpenWrt keeps module voice optional: use the separate `vesim-adb` and `vesim-modem-voice` packages. See [OpenWrt packaging](packaging/openwrt/README.md) for IPK/APK installation and target matching.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy-binary.sh | sh
-```
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy-binary.sh | \
-  VESIM_DIR=/opt/vesim \
-  VESIM_VERSION=v2.1.35 \
-  VESIM_ARCH=linux_amd64 sh
-```
-
-| Asset | Platform |
-| --- | --- |
-| `vesim_v2.1.35_linux_amd64` | x86_64, glibc + UPX |
-| `vesim_v2.1.35_linux_arm64` | ARM64 / Raspberry Pi OS 64-bit, glibc + UPX |
-| `vesim_v2.1.35_linux_armv7` | 32-bit ARM, glibc + UPX |
-| `vesim_v2.1.35_openwrt_amd64` | OpenWrt x86_64, musl static, no UPX |
-| `vesim_v2.1.35_openwrt_arm64` | OpenWrt aarch64 |
-| `vesim_v2.1.35_openwrt_armv7` | OpenWrt 32-bit ARM |
-| `vesim_v2.1.35_openwrt_dynamic_amd64` | OpenWrt x86_64, dynamic musl, MP3 encoding capable |
-| `vesim_v2.1.35_openwrt_dynamic_arm64` | OpenWrt aarch64, dynamic musl, MP3 encoding capable |
-| `vesim_v2.1.35_openwrt_dynamic_armv7` | OpenWrt 32-bit ARM, dynamic musl, MP3 encoding capable |
-
-On OpenWrt, use `openwrt_*` only. The package-manager archives and binary installer use the static assets. The dynamic assets require matching runtime libraries and are intended for MP3 call recording; see [OpenWrt packaging](packaging/openwrt/README.md#openwrt-dynamic-musl).
 
 ## Configuration
 
@@ -178,25 +121,37 @@ Do not commit secrets. SIM PIN fields store environment variable *names* only (`
 
 ## Build
 
-Go `1.26.4+`, Node.js / npm. `make build-*` requires UPX.
+Windows portable is the only artifact this fork produces.
 
-```bash
-make build-amd64    # also: build-arm64, build-armv7, build-all
+```powershell
+.\build-windows.ps1                              # frontend + backend + dist\vesim_v2.1.35_windows_amd64.zip
+.\build-windows.ps1 -GoBin C:\go\bin -SkipFrontend
 ```
 
-```bash
-npm ci --prefix web && npm run build --prefix web
-cp -R web/dist internal/web/dist
-GOWORK=off CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-  go build -trimpath -tags "with_utls nomsgpack" -o dist/vesim_linux_amd64 ./cmd/vesim
-```
+Prerequisites: Go `1.26.4+`, Node.js 20+. The build is `CGO_ENABLED=0` with the `with_utls nomsgpack` tags, so nothing else is installed.
+
+Checks:
 
 ```bash
-npm test --prefix web && npm run typecheck --prefix web
-go test -timeout=60s ./cmd/... ./internal/... ./pkg/...
+npm test --prefix web        # 397 frontend tests
+npm run typecheck --prefix web
+go test ./cmd/... ./internal/... ./pkg/...
 ```
+
+Cross-compiling a Linux binary is still possible (`GOOS=linux CGO_ENABLED=0 go build -tags "with_utls nomsgpack" -o dist/vesim_linux_amd64 ./cmd/vesim`) but is not published or tested here.
 
 Dev proxy: `VITE_API_PROXY_TARGET=http://127.0.0.1:7575` in `web/.env.local`. API docs: `/api/docs`.
+
+## Release
+
+Tag the commit and push the tag. `.github/workflows/windows-release.yml` builds `vesim_<version>_windows_amd64.zip` on a Windows runner and attaches it — plus its `.sha256` — to the release, creating the release if needed:
+
+```bash
+git tag v2.1.36
+git push origin v2.1.36
+```
+
+The tag also works for an existing release: assets are re-uploaded with `--clobber`. Manual rebuild: Actions → **Windows release** → Run workflow, with the version in the input.
 
 ## License
 
