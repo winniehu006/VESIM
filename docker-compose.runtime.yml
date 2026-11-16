@@ -1,0 +1,16 @@
+name: vesim-runtime-image
+
+services:
+  vesim-runtime:
+    image: winniehu006/vesim-runtime:3.24
+    build:
+      context: .
+      dockerfile: Dockerfile.runtime
+      pull: true
+      platforms:
+        - linux/amd64
+        - linux/arm64
+      tags:
+        - winniehu006/vesim-runtime:latest
+      provenance: false
+      sbom: false

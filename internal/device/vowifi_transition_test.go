@@ -1,0 +1,282 @@
+package device
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/iniwex5/vowifi-go/runtimehost"
+	"github.com/winniehu006/vesim/internal/cardpolicy"
+	"github.com/winniehu006/vesim/internal/vowifihost"
+)
+
+func TestSoftwareIMSTransitionInvalidatesOldOwnership(t *testing.T) {
+	for _, stage := range []string{"idle", "starting", "active"} {
+		for _, target := range []string{"volte", "modem_voice", "cellular_idle", "disable", "remove"} {
+			t.Run(stage+"_to_"+target, func(t *testing.T) {
+				p, w := atTestPool(t)
+				host := p.voWiFiHost()
+				claim := host.BeginStart(w.ID)
+				if stage == "idle" {
+					host.FailStart(w.ID, claim.Epoch, runtimehost.State{}, nil)
+				}
+				if stage == "active" && !host.ClaimStarted(w.ID, claim.Epoch, &runtimehost.Instance{}) {
+					t.Fatal("initial instance rejected")
+				}
+				var err error
+				switch target {
+				case "volte", "modem_voice":
+					w.Config.PhoneMode = target
+					err = p.StopSoftwareIMS(w.ID)
+				case "cellular_idle":
+					w.Config.PhoneMode = "cellular"
+					err = p.StopVoWiFiRuntimeForCellularIdle(w.ID)
+				case "disable":
+					err = p.DisableVoWiFi(w.ID)
+				case "remove":
+					err = p.AbandonDevice(w.ID)
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				if host.Active(w.ID) || host.Starting(w.ID) || host.ClaimStarted(w.ID, claim.Epoch, &runtimehost.Instance{}) {
+					t.Fatal("transition retained or accepted old software IMS")
+				}
+				if next := host.BeginStart(w.ID); !next.Accepted || next.Epoch <= claim.Epoch {
+					t.Fatalf("replacement cannot start with fresh ownership: %+v", next)
+				}
+			})
+		}
+	}
+}
+
+func TestPolicyModeChangeDrainsSoftwareStartupBeforeProjection(t *testing.T) {
+	p, port := testModemVoicePort(t)
+	w := port.worker
+	w.Config.PhoneMode = PhoneModeWiFi
+	p.SetPolicyResolver(&stubPolicyResolver{pol: cardpolicy.Policy{ICCID: port.iccid, PhoneMode: PhoneModeModemVoice, VoWiFiEnabled: true}})
+	started, release := make(chan context.Context, 1), make(chan struct{})
+	p.voWiFiHost().SetLifecycleRunForTest(func(ctx context.Context, cmd vowifihost.LifecycleCommand) error {
+		if cmd.Kind == vowifihost.LifecycleCommandEnable {
+			p.voWiFiHost().BeginStart(w.ID)
+			started <- ctx
+			<-release
+		}
+		return nil
+	})
+	enableDone := make(chan error, 1)
+	go func() { enableDone <- p.voWiFiHost().Enable(p.Context(), w.ID) }()
+	oldCtx := <-started
+	changed := make(chan policyApplyResult, 1)
+	go func() { changed <- p.resolveAndApplyPolicy(w, "handoff_test") }()
+	select {
+	case <-oldCtx.Done():
+	case <-time.After(time.Second):
+		close(release)
+		t.Fatal("mode switch did not cancel startup")
+	}
+	if w.Config.PhoneMode != PhoneModeWiFi {
+		t.Error("new policy projected while old startup could still change RF")
+	}
+	close(release)
+	<-enableDone
+	if result := <-changed; !result.Applied || result.Err != nil {
+		t.Fatalf("mode transition failed: %+v", result)
+	}
+}
+
+func TestNativePhoneModesRejectDelayedSoftwarePreparation(t *testing.T) {
+	for _, mode := range []string{PhoneModeVoLTE, PhoneModeModemVoice} {
+		t.Run(mode, func(t *testing.T) {
+			p, w := atTestPool(t)
+			w.Config.PhoneMode = mode
+			if _, err := p.prepareVoWiFiStartContext(context.Background(), w.ID, "test", ""); err == nil {
+				t.Fatal("native mode allowed software IMS preparation")
+			}
+		})
+	}
+}
+
+// Card policy projection stops software IMS without restoring the radio; the
+// projected policy decides the radio right after. A restore here would turn the
+// radio on from the stale config for a moment.
+func TestPolicyKeepsRadioOffOnlyWhenTheProjectionTurnsItOff(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		pol  cardpolicy.Policy
+		want bool
+	}{
+		{"wifi calling", cardpolicy.Policy{VoWiFiEnabled: true, PhoneMode: PhoneModeWiFi}, true},
+		{"airplane", cardpolicy.Policy{AirplaneEnabled: true, PhoneMode: PhoneModeCellular}, true},
+		// Restoring here also re-enables native IMS for the cellular phone.
+		{"cellular on demand", cardpolicy.Policy{VoWiFiEnabled: true, PhoneMode: PhoneModeCellular, DataStrategy: "on_demand"}, false},
+		{"native volte", cardpolicy.Policy{VoWiFiEnabled: true, PhoneMode: PhoneModeVoLTE}, false},
+		{"phone off", cardpolicy.Policy{PhoneMode: PhoneModeWiFi}, false},
+	} {
+		if got := policyKeepsRadioOff(tc.pol); got != tc.want {
+			t.Errorf("%s: policyKeepsRadioOff = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestPolicyApplyRestoresRadioOnlyWhenTheNewPolicyKeepsItOn(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		pol  cardpolicy.Policy
+		want bool
+	}{
+		{"airplane", cardpolicy.Policy{AirplaneEnabled: true, PhoneMode: PhoneModeWiFi}, false},
+		{"cellular on demand", cardpolicy.Policy{VoWiFiEnabled: true, PhoneMode: PhoneModeCellular, DataStrategy: "on_demand"}, true},
+	} {
+		p, w := atTestPool(t)
+		w.Config.PhoneMode, w.Config.VoWiFiEnabled = PhoneModeWiFi, true
+		w.state.Identity.ICCID = "test-sim"
+		tc.pol.ICCID = "test-sim"
+		host := p.voWiFiHost()
+		host.BeginStart(w.ID)
+		var got *vowifihost.LifecycleCommand
+		host.SetLifecycleRunForTest(func(ctx context.Context, cmd vowifihost.LifecycleCommand) error {
+			if cmd.Kind == vowifihost.LifecycleCommandDisable {
+				got = &cmd
+			}
+			return nil
+		})
+		p.SetPolicyResolver(&stubPolicyResolver{pol: tc.pol})
+		p.resolveAndApplyPolicy(w, "test_projection")
+		if got == nil || got.RestoreRadio != tc.want {
+			t.Errorf("%s: disable command=%+v, want RestoreRadio=%v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestPolicyProjectionStopsSoftwareIMSWithoutRestoringRadio(t *testing.T) {
+	for _, restore := range []bool{true, false} {
+		p, w := atTestPool(t)
+		host := p.voWiFiHost()
+		host.BeginStart(w.ID)
+		var got *vowifihost.LifecycleCommand
+		host.SetLifecycleRunForTest(func(ctx context.Context, cmd vowifihost.LifecycleCommand) error {
+			if cmd.Kind == vowifihost.LifecycleCommandDisable {
+				got = &cmd
+			}
+			return nil
+		})
+		var err error
+		if restore {
+			err = p.StopSoftwareIMS(w.ID)
+		} else {
+			err = p.stopSoftwareIMS(w.ID, false)
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got == nil || got.RestoreRadio != restore {
+			t.Fatalf("restore=%v disable command=%+v", restore, got)
+		}
+	}
+}
+
+// Card policy projection and eSIM switching hold the transition lock while they
+// stop software IMS and wait for the running start to drain. A start waiting for
+// that lock must give up once its context is cancelled, or both wait forever.
+func TestVoWiFiStartLockGivesUpWhenCancelledWhileWaiting(t *testing.T) {
+	p, w := atTestPool(t)
+	transition := p.policyTransitionFor(w.ID)
+	transition.Lock()
+	defer transition.Unlock()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan error, 1)
+	go func() {
+		_, release, err := p.lockVoWiFiStartOwnership(ctx, w, "t")
+		if release != nil {
+			release()
+		}
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		t.Fatalf("start took the held lock: err=%v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, errVoWiFiStartSuperseded) {
+			t.Fatalf("err=%v, want errVoWiFiStartSuperseded", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("start kept waiting for the lock after it was cancelled")
+	}
+}
+
+// A context cancelled before the start reaches a free lock must not take it.
+func TestVoWiFiStartLockGivesUpWhenCancelledWithTheLockFree(t *testing.T) {
+	p, w := atTestPool(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, release, err := p.lockVoWiFiStartOwnership(ctx, w, "t"); !errors.Is(err, errVoWiFiStartSuperseded) {
+		if release != nil {
+			release()
+		}
+		t.Fatalf("err=%v, want errVoWiFiStartSuperseded", err)
+	}
+	transition := p.policyTransitionFor(w.ID)
+	if !transition.TryLock() {
+		t.Fatal("cancelled start left the transition lock held")
+	}
+	transition.Unlock()
+}
+
+// A context cancelled before the start reaches the lock must not leave it waiting.
+func TestVoWiFiStartLockGivesUpWhenCancelledBeforeWaiting(t *testing.T) {
+	p, w := atTestPool(t)
+	transition := p.policyTransitionFor(w.ID)
+	transition.Lock()
+	defer transition.Unlock()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := p.lockVoWiFiStartOwnership(ctx, w, "t")
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if !errors.Is(err, errVoWiFiStartSuperseded) {
+			t.Fatalf("err=%v, want errVoWiFiStartSuperseded", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("start cancelled before the lock kept waiting")
+	}
+}
+
+func TestVoWiFiStartLockProceedsWhenReleased(t *testing.T) {
+	p, w := atTestPool(t)
+	transition := p.policyTransitionFor(w.ID)
+	transition.Lock()
+	done := make(chan error, 1)
+	go func() {
+		_, release, err := p.lockVoWiFiStartOwnership(context.Background(), w, "t")
+		if release != nil {
+			release()
+		}
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		t.Fatalf("start took the held lock: err=%v", err)
+	case <-time.After(50 * time.Millisecond):
+	}
+	transition.Unlock()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("start did not take the released lock: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("start did not take the released lock")
+	}
+}

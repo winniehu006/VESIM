@@ -1,0 +1,336 @@
+name: Build Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string used when manually triggered'
+        required: false
+        default: 'dev'
+      enable_upx:
+        description: 'Enable UPX compression (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: binary-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  frontend:
+    name: Build frontend assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build frontend assets
+        shell: bash
+        run: |
+          npm ci --prefix web
+          npm run build --prefix web
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  build:
+    name: Build ${{ matrix.artifact_arch }}
+    runs-on: ubuntu-latest
+    needs: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goarch: amd64
+            goarm: ''
+            artifact_arch: amd64
+          - goarch: arm64
+            goarm: ''
+            artifact_arch: arm64
+          - goarch: arm
+            goarm: '7'
+            artifact_arch: armv7
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Prepare build vars
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="${{ github.event.inputs.version || 'dev' }}"
+          fi
+          BUILDTIME="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          ENABLE_UPX_RAW="${{ github.event.inputs.enable_upx || 'true' }}"
+          case "${ENABLE_UPX_RAW}" in
+            true|1|yes|on) ENABLE_UPX=1 ;;
+            *) ENABLE_UPX=0 ;;
+          esac
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "buildtime=${BUILDTIME}" >> "${GITHUB_OUTPUT}"
+          echo "enable_upx=${ENABLE_UPX}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+
+      - name: Sync frontend dist for embed
+        shell: bash
+        run: |
+          rm -rf internal/web/dist
+          mkdir -p internal/web
+          cp -R web/dist internal/web/dist
+
+      - name: Build binary
+        shell: bash
+        run: |
+          mkdir -p dist
+          GOWORK=off CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} \
+            go build -trimpath -buildvcs=false -tags "with_utls nomsgpack" \
+            -ldflags "-s -w -X 'github.com/winniehu006/vesim/internal/global.Version=${{ steps.vars.outputs.version }}' -X 'github.com/winniehu006/vesim/internal/global.BuildTime=${{ steps.vars.outputs.buildtime }}'" \
+            -o dist/vesim ./cmd/vesim
+
+      - name: Install UPX
+        if: ${{ steps.vars.outputs.enable_upx == '1' }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y upx-ucl || sudo apt-get install -y upx
+
+      - name: Compress with UPX
+        if: ${{ steps.vars.outputs.enable_upx == '1' }}
+        shell: bash
+        run: |
+          upx --best --lzma dist/vesim || upx -9 dist/vesim
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          OUT="vesim_${{ steps.vars.outputs.version }}_linux_${{ matrix.artifact_arch }}"
+          mkdir -p out
+          cp dist/vesim "out/${OUT}"
+          (cd out && sha256sum "${OUT}" > "${OUT}.sha256")
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.artifact_arch }}
+          path: out/*
+          retention-days: 3
+
+  build-openwrt:
+    name: Build OpenWrt ${{ matrix.artifact_arch }}
+    runs-on: ubuntu-latest
+    # Up to 60 minutes of resumable download, plus extraction and compilation.
+    timeout-minutes: 80
+    needs: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goarch: amd64
+            goarm: ''
+            sdk_id: 24.10.8-x86-64
+            artifact_arch: amd64
+          - goarch: arm64
+            goarm: ''
+            sdk_id: 24.10.8-armsr-armv8
+            artifact_arch: arm64
+          - goarch: arm
+            goarm: '7'
+            sdk_id: 24.10.8-mvebu-cortexa9
+            artifact_arch: armv7
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Prepare build vars
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="${{ github.event.inputs.version || 'dev' }}"
+          fi
+          BUILDTIME="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "buildtime=${BUILDTIME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download verified OpenWrt SDK
+        id: sdk
+        uses: ./.github/actions/download-openwrt-sdk
+        with:
+          sdk-id: ${{ matrix.sdk_id }}
+
+      - name: Install pinned OpenWrt musl toolchain
+        env:
+          SDK_ARCHIVE: ${{ steps.sdk.outputs.archive }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_dir="$RUNNER_TEMP/openwrt-sdk"
+          mkdir -p "$sdk_dir"
+          tar --zstd -xf "$SDK_ARCHIVE" -C "$sdk_dir" --strip-components=1
+          mapfile -t compilers < <(find "$sdk_dir/staging_dir" -path '*/bin/*-openwrt-linux-musl*-gcc' -print)
+          if [ "${#compilers[@]}" -ne 1 ]; then
+            printf 'expected one OpenWrt musl compiler, found %s\n' "${#compilers[@]}" >&2
+            printf '%s\n' "${compilers[@]}" >&2
+            exit 1
+          fi
+          echo "CC=${compilers[0]}" >> "${GITHUB_ENV}"
+          echo "STAGING_DIR=${sdk_dir}/staging_dir" >> "${GITHUB_ENV}"
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+
+      - name: Sync frontend dist for embed
+        shell: bash
+        run: |
+          rm -rf internal/web/dist
+          mkdir -p internal/web
+          cp -R web/dist internal/web/dist
+
+      - name: Build OpenWrt static binary
+        shell: bash
+        run: |
+          VERSION="${{ steps.vars.outputs.version }}" \
+          BUILD_TIME="${{ steps.vars.outputs.buildtime }}" \
+          GOARCH="${{ matrix.goarch }}" \
+          GOARM="${{ matrix.goarm }}" \
+          LINK_MODE=static \
+          OUT="dist/vesim-static" \
+          sh packaging/openwrt/build.sh
+
+      - name: Build OpenWrt dynamic binary
+        shell: bash
+        run: |
+          VERSION="${{ steps.vars.outputs.version }}" \
+          BUILD_TIME="${{ steps.vars.outputs.buildtime }}" \
+          GOARCH="${{ matrix.goarch }}" \
+          GOARM="${{ matrix.goarm }}" \
+          LINK_MODE=dynamic \
+          OUT="dist/vesim-dynamic" \
+          sh packaging/openwrt/build.sh
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          STATIC_OUT="vesim_${{ steps.vars.outputs.version }}_openwrt_${{ matrix.artifact_arch }}"
+          DYNAMIC_OUT="vesim_${{ steps.vars.outputs.version }}_openwrt_dynamic_${{ matrix.artifact_arch }}"
+          mkdir -p out
+          cp dist/vesim-static "out/${STATIC_OUT}"
+          cp dist/vesim-dynamic "out/${DYNAMIC_OUT}"
+          (
+            cd out
+            sha256sum "${STATIC_OUT}" > "${STATIC_OUT}.sha256"
+            sha256sum "${DYNAMIC_OUT}" > "${DYNAMIC_OUT}.sha256"
+          )
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-openwrt-${{ matrix.artifact_arch }}
+          path: out/*
+          retention-days: 3
+
+  openwrt-packages:
+    needs: build-openwrt
+    uses: ./.github/workflows/openwrt-packages.yml
+    with:
+      version: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version || 'dev' }}
+
+  release:
+    name: Publish release assets
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - build-openwrt
+      - openwrt-packages
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Prepare release vars
+        id: release_vars
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            RELEASE_VERSION="${GITHUB_REF_NAME}"
+          else
+            RELEASE_VERSION="${{ github.event.inputs.version || 'dev' }}"
+          fi
+          echo "release_version=${RELEASE_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binaries-*
+          merge-multiple: true
+          path: dist
+
+      - name: Write SHA256SUMS from uploaded binaries
+        shell: bash
+        run: |
+          cd dist
+          : > SHA256SUMS
+          for f in vesim_*; do
+            [ -f "$f" ] || continue
+            case "$f" in
+              *.sha256) continue ;;
+            esac
+            sha256sum "$f" >> SHA256SUMS
+          done
+          if [ ! -s SHA256SUMS ]; then
+            echo "SHA256SUMS is empty; no binaries found in dist/" >&2
+            ls -la
+            exit 1
+          fi
+          echo "SHA256SUMS:"
+          cat SHA256SUMS
+
+      - name: Publish to this GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_vars.outputs.release_version }}
+          files: dist/*
+          fail_on_unmatched_files: true
+          overwrite_files: true

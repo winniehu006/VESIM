@@ -1,0 +1,45 @@
+mcc: "262"
+mnc: "02"
+id: vodafone_de_26202
+device_model: rmx3366
+dpd_interval_seconds: 120
+ike_proposals:
+  - aes256-sha256-prfsha256-modp2048
+  - aes256-sha256-prfsha512-modp2048
+  - aes256-sha512-prfsha512-modp2048
+  - aes256-sha256-modp2048
+  - aes128-sha256-modp2048
+  - aes128-sha256-modp1024
+  - aes128-sha1-modp1024
+  - aes256-sha1-modp1024
+esp_proposals:
+  - aes256-sha256
+  - aes256-sha512
+  - aes128-sha256
+  - aes256gcm16
+  - aes128gcm16
+  - aes128-sha1
+ims_register_template:
+  id: vodafone_de_26202
+  include_pani_authenticated: true
+  strict_security_server_offer: true
+  enable_initial_reject_fallback: true
+  # SUBSCRIBE(mwi) got 480 (Restoration-Info: noresponse) or no answer and
+  # port-s was reset about every 30 s; builds that skipped MWI ran for hours
+  # with no such reset observed (vesim#90, #97).
+  disable_mwi_subscription: true
+  # Every refresh REGISTER that the S-CSCF re-authenticated reused the active
+  # port-c and SPIs; no packet came back after the response to the challenge.
+  # Offering new ones, all 5 re-authenticated refreshes in about 28 hours
+  # switched SAs (vesim#90).
+  refresh_offers_new_security_client: true
+  contact_param_order:
+    - access_type
+    - sip_instance
+    - audio
+    - smsip
+    - smsip_msisdn_less
+    - icsi_ref
+    - mid_call
+    - srvcc_alerting
+    - ps2cs_srvcc_orig_pre_alerting

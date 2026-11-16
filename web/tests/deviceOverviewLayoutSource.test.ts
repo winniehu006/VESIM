@@ -1,0 +1,77 @@
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import test from 'node:test'
+
+const devicesView = await readFile(
+  new URL('../src/views/Devices.vue', import.meta.url),
+  'utf8'
+)
+const overviewTab = await readFile(
+  new URL('../src/components/DeviceOverviewTab.vue', import.meta.url),
+  'utf8'
+)
+const connectionStage = await readFile(
+  new URL('../src/components/DeviceOverviewConnectionStage.vue', import.meta.url),
+  'utf8'
+)
+const identityPanel = await readFile(
+  new URL('../src/components/DeviceOverviewIdentityPanel.vue', import.meta.url),
+  'utf8'
+)
+const detailHeader = await readFile(
+  new URL('../src/components/DeviceDetailHeader.vue', import.meta.url),
+  'utf8'
+)
+const connectionPresentation = await readFile(
+  new URL('../src/utils/overviewConnectionPresentation.ts', import.meta.url),
+  'utf8'
+)
+
+test('VoWiFi overview exposes one service path and centralizes diagnostics', () => {
+  assert.doesNotMatch(overviewTab, /VoWiFi 运行时|readinessItems|showVowifiDetail/)
+  assert.match(overviewTab, /v-if="!isWifiPath"/)
+  assert.match(overviewTab, /phoneModeCampsOnCell/)
+  assert.doesNotMatch(overviewTab, /phone_mode !== 'cellular'/)
+  assert.match(overviewTab, /<DeviceOverviewIdentityPanel/)
+  assert.equal(connectionStage.match(/class="overview-service-path"/g)?.length, 1)
+  assert.match(connectionStage, /createOverviewConnectionPresentation/)
+  assert.match(connectionPresentation, /volteServiceState/)
+
+  for (const key of ['overview.access', 'overview.dataplane', 'devices.protocol', 'devices.iface', 'overview.lastReason', 'overview.errorClass']) {
+    assert.match(connectionPresentation, new RegExp(key.replace('.', '\\.')))
+  }
+})
+
+test('identity panel keeps production facts and existing operations', () => {
+  for (const label of ['IMEI', 'ICCID', 'IMSI']) {
+    assert.match(identityPanel, new RegExp(`label: '${label}'`))
+  }
+  for (const key of [
+    'devices.localNumber',
+    'devices.homeOperator',
+    'devices.firmware',
+    'devices.flightMode',
+    'devices.backend'
+  ]) {
+    assert.match(identityPanel, new RegExp(key.replace('.', '\\.')))
+  }
+
+  assert.match(identityPanel, /useSensitiveVisibility/)
+  assert.match(identityPanel, /copyToClipboard/)
+  assert.match(detailHeader, /useSensitiveVisibility/)
+  assert.match(detailHeader, /sensitive: true/)
+  assert.match(detailHeader, /is-sensitive/)
+  assert.match(detailHeader, /simOperatorDisplay/)
+  assert.match(detailHeader, /servingOperator\.value \|\| simOperator\.value/)
+  assert.doesNotMatch(detailHeader, /modem\?\.operator \|\| props\.device\.modem\?\.native_spn/)
+  assert.match(devicesView, /:sim-operator-display="selectedSimOperatorDisplay"/)
+  assert.match(identityPanel, /device\?\.e911_setup_available/)
+  assert.match(identityPanel, /emit\('setup-e911'\)/)
+})
+
+test('cellular signal panel hides invalid modem sentinel values', () => {
+  assert.match(overviewTab, /displaySignalDbm/)
+  assert.match(overviewTab, /signalDbmDisplay/)
+  assert.match(overviewTab, /signalMetricDisplay/)
+  assert.doesNotMatch(overviewTab, /device\?\.modem\?\.signal_dbm \?\? '--'/)
+})

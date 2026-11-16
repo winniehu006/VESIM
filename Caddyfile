@@ -1,0 +1,9 @@
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
+https://{$VESIM_DOMAIN}:{$VESIM_HTTPS_PORT} {
+	reverse_proxy 127.0.0.1:7575
+}

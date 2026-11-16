@@ -1,0 +1,24 @@
+services:
+  vesim:
+    image: winniehu006/vesim:latest
+    container_name: vesim
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    # host 网络让 VESIM 直接监听配置的 UDP 端口，WebRTC 媒体不经过 Caddy。
+    network_mode: host
+    privileged: true
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./logs:/app/logs
+      # Keep the whole /dev bind: USB re-enumeration changes ADB and PCM nodes.
+      - /dev:/dev
+    environment:
+      TZ: Asia/Shanghai
+      CONFIG_PATH: /app/config/config.yaml
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

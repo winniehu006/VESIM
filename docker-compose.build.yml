@@ -1,0 +1,21 @@
+name: vesim-image-build
+
+services:
+  vesim:
+    image: winniehu006/vesim:${VESIM_VERSION:-2.1.23}
+    build:
+      context: .
+      dockerfile: Dockerfile.release
+      pull: true
+      platforms:
+        - linux/amd64
+        - linux/arm64
+      args:
+        VERSION: v${VESIM_VERSION:-2.1.23}
+        REVISION: ${VESIM_REVISION:?VESIM_REVISION is required}
+        BUILDTIME: ${VESIM_BUILDTIME:?VESIM_BUILDTIME is required}
+      tags:
+        - winniehu006/vesim:${VESIM_MINOR_VERSION:-2.1}
+        - winniehu006/vesim:${VESIM_LATEST_TAG:-latest}
+      provenance: false
+      sbom: false

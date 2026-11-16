@@ -1,0 +1,25 @@
+name: vesim-image-source-build
+
+# 从源码完整构建（npm + Go + apk）。更新依赖、排查底包、或不走预编译二进制时用这个。
+# 日常发版请用 docker-compose.build.yml，只把 dist/ 里的二进制拷进 vesim-runtime。
+services:
+  vesim:
+    image: winniehu006/vesim:${VESIM_VERSION:-2.1.23}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      pull: true
+      platforms:
+        - linux/amd64
+        - linux/arm64
+      args:
+        VERSION: v${VESIM_VERSION:-2.1.23}
+        REVISION: ${VESIM_REVISION:?VESIM_REVISION is required}
+        BUILDTIME: ${VESIM_BUILDTIME:?VESIM_BUILDTIME is required}
+        ENABLE_UPX: ${VESIM_ENABLE_UPX:-0}
+      tags:
+        - winniehu006/vesim:${VESIM_MINOR_VERSION:-2.1}
+        - winniehu006/vesim:${VESIM_LATEST_TAG:-latest}
+      provenance: false
+      sbom: false

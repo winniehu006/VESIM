@@ -1,0 +1,16 @@
+appname=vesim
+version=@VERSION@
+display_name=VESIM
+desc=USB 模组管理、短信、WiFi Calling 与模组直拨。通过 Docker 运行，需要 host 网络及 USB 设备访问。
+platform=all
+source=thirdparty
+maintainer=winniehu006
+maintainer_url=https://github.com/winniehu006/vesim
+distributor=winniehu006
+distributor_url=https://github.com/winniehu006/vesim
+desktop_uidir=ui
+desktop_applaunchname=vesim.main
+service_port=@HTTP_PORT@
+checkport=true
+ctl_stop=true
+disable_authorization_path=true

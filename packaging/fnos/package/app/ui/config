@@ -1,0 +1,14 @@
+{
+  ".url": {
+    "vesim.main": {
+      "title": "VESIM",
+      "icon": "images/icon_{0}.png",
+      "type": "url",
+      "protocol": "http",
+      "port": "@HTTP_PORT@",
+      "url": "/",
+      "allUsers": false,
+      "control": {"accessPerm": "readonly"}
+    }
+  }
+}
