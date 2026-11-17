@@ -1,5 +1,5 @@
 # Builds a self-contained VESIM executable and portable zip for Windows.
-# Usage: .\build-windows.ps1 [-Version v2.1.36] [-GoBin <path>] [-SkipFrontend]
+# Usage: .\build-windows.ps1 [-Version v2.1.37] [-GoBin <path>] [-SkipFrontend]
 # When -Version is omitted the newest git tag is used, so the package name
 # follows the release being built instead of a hard-coded constant.
 param(

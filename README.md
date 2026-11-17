@@ -143,11 +143,11 @@ Dev proxy: `VITE_API_PROXY_TARGET=http://127.0.0.1:7575` in `web/.env.local`. AP
 
 ## Release
 
-Tag the commit and push the tag. `.github/workflows/windows-release.yml` builds `vesim_<version>_windows_amd64.zip` on a Windows runner and attaches it — plus its `.sha256` — to the release, creating the release if needed:
+Tag the commit and push the tag. `.github/workflows/windows-release.yml` builds `vesim_<version>_windows_amd64.zip` on a Windows runner and attaches it — plus its `.sha256` — to the release, creating the release if needed. The release notes are generated from the checksum file, so the published SHA256 always matches the uploaded zip:
 
 ```bash
-git tag v2.1.36
-git push origin v2.1.36
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 The tag also works for an existing release: assets are re-uploaded with `--clobber`. Manual rebuild: Actions → **Windows release** → Run workflow, with the version in the input.

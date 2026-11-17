@@ -140,11 +140,11 @@ go test ./cmd/... ./internal/... ./pkg/...
 
 ## 发布
 
-打 tag 并推送即可。`.github/workflows/windows-release.yml` 会在 Windows Runner 上编译 `vesim_<version>_windows_amd64.zip`（含 `.sha256`），并挂到对应 Release 上，Release 不存在时自动创建：
+打 tag 并推送即可。`.github/workflows/windows-release.yml` 会在 Windows Runner 上编译 `vesim_<version>_windows_amd64.zip`（含 `.sha256`），并挂到对应 Release 上，Release 不存在时自动创建；发布说明中的 SHA256 直接取自校验文件，始终与上传的压缩包一致：
 
 ```bash
-git tag v2.1.36
-git push origin v2.1.36
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 如果该 tag 的 Release 已存在，会用 `--clobber` 覆盖同名产物。也可手动触发：Actions → **Windows release** → Run workflow，在输入框填版本号。
