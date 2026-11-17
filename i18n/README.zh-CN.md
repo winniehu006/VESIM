@@ -21,6 +21,8 @@
 
 [下载](https://github.com/winniehu006/VESIM/releases/latest) · [更新记录](../CHANGELOG.md) · [接入 AI 助手](#mcp--ai-助手)
 
+文档：[项目说明](../docs/PROJECT.md) · [操作手册](../docs/USER_GUIDE.md) · [附属手册](../docs/REFERENCE.md) · [维护手册](../docs/MAINTENANCE.md)
+
 | | |
 | --- | --- |
 | Web | `http://localhost:7575` |

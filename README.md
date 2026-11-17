@@ -21,6 +21,8 @@ Manage USB modems, cellular proxy, SMS, WiFi calling / IMS voice, eSIM, and sche
 
 [Download](https://github.com/winniehu006/VESIM/releases/latest) · [Changelog](CHANGELOG.md) · [Connect an AI assistant](#mcp--ai-assistants)
 
+中文文档：[项目说明](docs/PROJECT.md) · [操作手册](docs/USER_GUIDE.md) · [附属手册](docs/REFERENCE.md) · [维护手册](docs/MAINTENANCE.md)
+
 | | |
 | --- | --- |
 | Web UI | `http://localhost:7575` |
