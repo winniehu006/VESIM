@@ -73,15 +73,29 @@ jobs:
           "$sum  vesim_${version}_windows_amd64.zip" |
             Out-File -NoNewline "dist\vesim_${version}_windows_amd64.zip.sha256"
 
+      - name: Compose release notes
+        shell: bash
+        run: |
+          version="${{ steps.vars.outputs.version }}"
+          sum="$(cut -d' ' -f1 "dist/vesim_${version}_windows_amd64.zip.sha256")"
+          cat > notes.md <<EOF
+          Windows portable build of VESIM.
+
+          - \`vesim_${version}_windows_amd64.zip\` — unzip it anywhere, run \`start-vesim.bat\`, then open <http://localhost:7575> (default \`admin\` / \`admin\`, change on first sign-in).
+          - SHA256: \`${sum}\`
+
+          This fork publishes Windows builds only. Linux / Docker / OpenWrt deployment is not built here; use [upstream HiDeck](https://github.com/yibaiba/hideck) for modem deployments.
+          EOF
+
       - name: Create the release when missing
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           version="${{ steps.vars.outputs.version }}"
-          gh release view "$version" || gh release create "$version" \
+          gh release view "$version" >/dev/null 2>&1 || gh release create "$version" \
             --title "VESIM $version (Windows)" \
-            --notes "Windows portable build of VESIM. Unzip and run start-vesim.bat, then open http://localhost:7575 (default admin / admin)."
+            --notes-file notes.md
 
       - name: Upload assets
         shell: bash
@@ -93,3 +107,11 @@ jobs:
             "dist/vesim_${version}_windows_amd64.zip" \
             "dist/vesim_${version}_windows_amd64.zip.sha256" \
             --clobber
+
+      - name: Publish release notes with the checksum
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.vars.outputs.version }}"
+          gh release edit "$version" --title "VESIM $version (Windows)" --notes-file notes.md
