@@ -2,6 +2,21 @@
 
 set -eu
 
+cat >&2 <<'EOF'
+This fork publishes Windows portable builds only.
+
+deploy.sh builds and starts the Docker deployment, but this repository no longer
+builds or publishes a container image, so the compose pull would fail.
+
+  Windows: download vesim_*_windows_amd64.zip from
+           https://github.com/winniehu006/VESIM/releases/latest
+           unzip it and run start-vesim.bat
+
+  Docker / Linux: use the upstream HiDeck project instead:
+           https://github.com/yibaiba/hideck
+EOF
+exit 1
+
 SOURCE_BASE_URL="https://raw.githubusercontent.com/winniehu006/vesim/main"
 MIN_PORT=1
 MAX_PORT=65535

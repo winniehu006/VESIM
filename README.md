@@ -8,7 +8,6 @@
 
 <p>
   <a href="https://github.com/winniehu006/vesim/releases/latest"><img src="https://img.shields.io/github/v/release/winniehu006/vesim" alt="Release"></a>
-  <a href="https://hub.docker.com/r/winniehu006/vesim"><img src="https://img.shields.io/badge/docker-winniehu006%2Fvesim-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="go.mod"><img src="https://img.shields.io/badge/Go-1.26.4%2B-00ADD8?logo=go" alt="Go"></a>
   <a href="web/package.json"><img src="https://img.shields.io/badge/Vue-3-42b883?logo=vue.js" alt="Vue 3"></a>
   <a href="LICENSE"><img src="https://img.shields.io/static/v1?label=License&message=PolyForm%20NC%201.0.0&color=blue" alt="License: PolyForm Noncommercial 1.0.0"></a>
@@ -18,9 +17,9 @@
 
 Manage USB modems, cellular proxy, SMS, WiFi calling / IMS voice, eSIM, and scheduled tasks from a browser or an AI assistant via MCP.
 
-> **VESIM** is a renamed fork of [HiDeck](https://github.com/yibaiba/hideck), based on upstream v2.1.35. The web console, backend and documentation are derived from HiDeck and remain under the PolyForm Noncommercial 1.0.0 license. This fork is not affiliated with or endorsed by the upstream author.
+> **VESIM** is a renamed fork of [HiDeck](https://github.com/yibaiba/hideck), based on upstream v2.1.35. The web console, backend and documentation are derived from HiDeck and remain under the PolyForm Noncommercial 1.0.0 license. This fork is not affiliated with or endorsed by the upstream author. It ships a Windows portable build only: real modem hardware (QMI/MBIM/AT, VoWiFi, USB audio, interface binding) needs Linux with host USB access, so use upstream HiDeck for modem deployments.
 
-[Download v2.1.36](https://github.com/winniehu006/vesim/releases/tag/v2.1.36) · [Changelog](CHANGELOG.md) · [Connect an AI assistant](#mcp--ai-assistants)
+[Download](https://github.com/winniehu006/VESIM/releases/latest) · [Changelog](CHANGELOG.md) · [Connect an AI assistant](#mcp--ai-assistants)
 
 | | |
 | --- | --- |
@@ -52,7 +51,7 @@ WebDAV backup and safe local cleanup: [archive SMS, calls and recordings](docs/w
 
 ## Quick start (Windows)
 
-Download `vesim_v2.1.36_windows_amd64.zip` from [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.36), unzip it anywhere, run `start-vesim.bat`, then open <http://localhost:7575> (default `admin` / `admin`, change on first sign-in). No installer, no service, no Linux host required — the Windows portable zip is the only release artifact this fork publishes.
+Download the newest `vesim_*_windows_amd64.zip` from [Releases](https://github.com/winniehu006/VESIM/releases/latest), unzip it anywhere, run `start-vesim.bat`, then open <http://localhost:7575> (default `admin` / `admin`, change on first sign-in). No installer, no service, no Linux host required — the Windows portable zip is the only release artifact this fork publishes.
 
 Or build it yourself:
 
@@ -60,13 +59,13 @@ Or build it yourself:
 .\build-windows.ps1
 ```
 
-The script compiles the Vue frontend and the Go backend and writes `dist\vesim_v2.1.36_windows_amd64.zip`. It needs Go 1.26+ and Node.js 20+; use `-GoBin <path>` when Go is not on `PATH`, and `-SkipFrontend` when `web/` was already built. When `-Version` is omitted the newest git tag decides the version.
+The script compiles the Vue frontend and the Go backend and writes `dist\vesim_<tag>_windows_amd64.zip`, where `<tag>` comes from the newest git tag (`-Version` overrides it). It needs Go 1.26+ and Node.js 20+; use `-GoBin <path>` when Go is not on `PATH`, and `-SkipFrontend` when `web/dist` was already copied into `internal/web/dist`.
 
 On Windows the console starts with no devices — QMI/MBIM/AT access, VoWiFi, USB audio, host-network proxy binding and udev hot-plug need Linux with host USB access.
 
 ### Legacy Linux / Docker / OpenWrt
 
-The upstream HiDeck Linux paths are still in this tree (`Dockerfile*`, `docker-compose*.yml`, `deploy*.sh`, `packaging/openwrt`, `packaging/fnos`, `Makefile`) and remain the only way to drive real modem hardware, but this fork no longer builds, publishes or tests them. Use [upstream HiDeck](https://github.com/yibaiba/hideck) for modem deployments.
+The upstream HiDeck Linux paths are still in this tree (`Dockerfile*`, `docker-compose*.yml`, `deploy*.sh`, `packaging/openwrt`, `packaging/fnos`, `Makefile`) and remain the only way to drive real modem hardware, but this fork no longer builds, publishes or tests them. Use [upstream HiDeck](https://github.com/yibaiba/hideck) for modem deployments. `deploy.sh` and `deploy-binary.sh` stop immediately with that advice instead of failing on missing release assets.
 
 ## MCP / AI assistants
 
@@ -124,7 +123,7 @@ Do not commit secrets. SIM PIN fields store environment variable *names* only (`
 Windows portable is the only artifact this fork produces.
 
 ```powershell
-.\build-windows.ps1                              # frontend + backend + dist\vesim_v2.1.36_windows_amd64.zip
+.\build-windows.ps1                              # frontend + backend + dist\vesim_<tag>_windows_amd64.zip
 .\build-windows.ps1 -GoBin C:\go\bin -SkipFrontend
 ```
 

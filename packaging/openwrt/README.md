@@ -181,4 +181,4 @@ docker run --rm --platform linux/amd64 \
 
 脚本验证 ELF 架构与静态链接、计算并校验输入哈希，使用 SDK 固定的 feeds revision 编译 ADB，仅收集三个 VESIM 包。主包只封装已经编译好的静态程序，不重复构建 QMI/内核组件；包元数据仍声明这些依赖，由目标系统的 opkg/apk 检查并安装。输出带 SHA256SUMS；APK 额外签名并验证。标准库和内核依赖从目标系统匹配的软件源安装，不随附件混装。
 
-二进制发布工作流自动调用 [openwrt-packages.yml](../../.github/workflows/openwrt-packages.yml)，使用同次构建的 VESIM，避免把尚不识别专用 ADB 路径的旧版本包装进来。也可手动触发 **Build Release Binaries** 从当前源码构建整套产物；源码提交和二进制版本会写入 `BUILDINFO`。`dev` 构建的包管理版本为 `0.0.0`，程序内版本仍为 `dev`；正式发布使用数字版本。
+上游仓库中，二进制发布工作流会自动调用 `openwrt-packages.yml`，使用同次构建的 VESIM，避免把尚不识别专用 ADB 路径的旧版本包装进来；也可手动触发 **Build Release Binaries** 从当前源码构建整套产物，源码提交和二进制版本会写入 `BUILDINFO`。`dev` 构建的包管理版本为 `0.0.0`，程序内版本仍为 `dev`；正式发布使用数字版本。**本分支已移除这些工作流，上述自动构建不可用。**

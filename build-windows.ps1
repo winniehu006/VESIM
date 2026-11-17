@@ -27,9 +27,11 @@ $go = Get-Command go -ErrorAction SilentlyContinue
 if (-not $go) {
   throw "go was not found in PATH. Install Go 1.26+ or add its bin directory to PATH."
 }
-$npm = Get-Command npm -ErrorAction SilentlyContinue
-if (-not $npm) {
-  throw "npm was not found in PATH. Install Node.js 20+ first."
+if (-not $SkipFrontend) {
+  $npm = Get-Command npm -ErrorAction SilentlyContinue
+  if (-not $npm) {
+    throw "npm was not found in PATH. Install Node.js 20+ first, or pass -SkipFrontend after building web/ yourself."
+  }
 }
 
 if (-not $SkipFrontend) {
@@ -40,6 +42,9 @@ if (-not $SkipFrontend) {
 
   if (Test-Path internal/web/dist) { Remove-Item -Recurse -Force internal/web/dist }
   Copy-Item -Recurse web/dist internal/web/dist
+}
+if (-not (Test-Path internal/web/dist)) {
+  throw "internal/web/dist is missing. Run without -SkipFrontend, or copy web/dist into internal/web/dist first."
 }
 
 $env:CGO_ENABLED = "0"

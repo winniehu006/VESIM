@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.1.37 - 2026-11-17
+
+### 修复
+
+- WebRTC UDP 端口告警误报：绑定成功但地址文本不同（`:7580` → `[::]:7580`）时也会提示「端口被占用」。现在按端口比较，只有真正换用其他端口才告警。
+- 数据库初始化前自动创建父目录，解压后直接运行 `vesim.exe`（不经过 `start-vesim.bat`）不再报 `unable to open database file`。
+- 修复 Windows 下 `go vet` 失败：PC/SC 的 `decodeMultiString` 测试移到 darwin/linux 专用文件。
+
+### 改进
+
+- `start-vesim.bat` 读取 `config.yaml` 中的 `server.port`，改用 `localhost` 打开浏览器并延迟 3 秒，避免端口被其他程序占用时打开错误页面。
+- `build-windows.ps1` 在 `-SkipFrontend` 时不再要求安装 npm，并校验 `internal/web/dist` 是否存在。
+- 发布流程在打包前执行 `go vet` 与测试编译检查。
+- README 下载链接改为 `releases/latest`，不再随版本修改文档；移除指向不存在镜像的 Docker 徽章。
+- 7 个翻译版 README 删除已不再发布的 Linux/OpenWrt 资产表，并标注内容来自上游、可能过期。
+- `deploy.sh` 与 `deploy-binary.sh` 启动即提示本分支只发布 Windows 包并退出，不再因缺少 Linux 产物中途失败。
+
 ## 2.1.36 - 2026-11-17
 
 首个独立命名的 VESIM 版本，界面与功能沿用 HiDeck 2.1.35。

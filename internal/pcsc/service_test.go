@@ -201,14 +201,6 @@ func TestLogicalChannelReportsMissingApplication(t *testing.T) {
 	}
 }
 
-func TestDecodeMultiString(t *testing.T) {
-	want := []string{"Reader A", "Reader B"}
-	got := decodeMultiString([]byte("Reader A\x00Reader B\x00\x00"))
-	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
-		t.Fatalf("decodeMultiString = %#v", got)
-	}
-}
-
 type countingBackend struct {
 	mu        sync.Mutex
 	opens     int

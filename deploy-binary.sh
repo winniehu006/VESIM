@@ -2,6 +2,22 @@
 
 set -eu
 
+cat >&2 <<'EOF'
+This fork publishes Windows portable builds only.
+
+deploy-binary.sh downloads the linux_* / openwrt_* release assets, which are no
+longer built or published by this repository, so it would fail after fetching
+the release metadata.
+
+  Windows: download vesim_*_windows_amd64.zip from
+           https://github.com/winniehu006/VESIM/releases/latest
+           unzip it and run start-vesim.bat
+
+  Linux / OpenWrt: use the upstream HiDeck project instead:
+           https://github.com/yibaiba/hideck
+EOF
+exit 1
+
 REPO="winniehu006/vesim"
 SOURCE_BASE_URL="https://raw.githubusercontent.com/winniehu006/vesim/main"
 RELEASES_API_URL="https://api.github.com/repos/${REPO}/releases/latest"

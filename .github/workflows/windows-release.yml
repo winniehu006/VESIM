@@ -43,10 +43,26 @@ jobs:
             echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Prepare frontend
+        shell: pwsh
+        run: |
+          npm ci --prefix web
+          npm run build --prefix web
+          if (Test-Path internal/web/dist) { Remove-Item -Recurse -Force internal/web/dist }
+          Copy-Item -Recurse web/dist internal/web/dist
+
+      - name: Vet and compile tests
+        shell: pwsh
+        run: |
+          go vet ./cmd/... ./internal/... ./pkg/...
+          if ($LASTEXITCODE -ne 0) { throw "go vet failed" }
+          go test -run ZZZNoSuchTest -count=1 ./cmd/... ./internal/... ./pkg/...
+          if ($LASTEXITCODE -ne 0) { throw "test compilation failed" }
+
       - name: Build portable package
         shell: pwsh
         run: |
-          .\build-windows.ps1 -Version "${{ steps.vars.outputs.version }}"
+          .\build-windows.ps1 -Version "${{ steps.vars.outputs.version }}" -SkipFrontend
 
       - name: Write checksum
         shell: pwsh

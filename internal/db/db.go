@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -112,8 +113,33 @@ type SMSContact struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+// ensureSQLiteDirectory creates the parent directory of a file-backed SQLite
+// DSN. A portable copy that lost its data/ directory otherwise stops with a
+// bare "unable to open database file" from the driver.
+func ensureSQLiteDirectory(dsn string) error {
+	path := strings.TrimSpace(dsn)
+	if path == "" || path == ":memory:" || strings.HasPrefix(path, "file::memory:") {
+		return nil
+	}
+	path = strings.TrimPrefix(path, "file:")
+	if index := strings.IndexByte(path, '?'); index >= 0 {
+		path = path[:index]
+	}
+	if path == "" {
+		return nil
+	}
+	directory := filepath.Dir(path)
+	if directory == "." || directory == string(filepath.Separator) {
+		return nil
+	}
+	return os.MkdirAll(directory, 0o755)
+}
+
 // Init 初始化数据库连接
 func Init(dbPath string) error {
+	if err := ensureSQLiteDirectory(dbPath); err != nil {
+		return err
+	}
 	var err error
 	dsn := strings.TrimSpace(dbPath)
 	if dsn == "" {

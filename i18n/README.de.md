@@ -8,7 +8,6 @@
 
 <p>
   <a href="https://github.com/winniehu006/vesim/releases/latest"><img src="https://img.shields.io/github/v/release/winniehu006/vesim" alt="Release"></a>
-  <a href="https://hub.docker.com/r/winniehu006/vesim"><img src="https://img.shields.io/badge/docker-winniehu006%2Fvesim-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="../go.mod"><img src="https://img.shields.io/badge/Go-1.26.4%2B-00ADD8?logo=go" alt="Go"></a>
   <a href="../web/package.json"><img src="https://img.shields.io/badge/Vue-3-42b883?logo=vue.js" alt="Vue 3"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/static/v1?label=License&message=PolyForm%20NC%201.0.0&color=blue" alt="License: PolyForm Noncommercial 1.0.0"></a>
@@ -23,6 +22,11 @@ USB-Modems, Mobilfunk-Proxy, SMS, WiFi calling / IMS-Sprache, eSIM und geplante 
 | Web-UI | `http://YOUR_IP:7575` |
 | Standard-Login | `admin` / `admin` (beim ersten Anmelden ändern) |
 | Datenbank | SQLite (`data/vesim.db`) |
+
+> **This translation is kept from upstream HiDeck and is out of date.** VESIM publishes
+> Windows portable builds only: download the newest `vesim_*_windows_amd64.zip`, unzip it and
+> run `start-vesim.bat`. Linux / Docker / OpenWrt deployment is not built or published by this
+> fork — see [README.md](../README.md) for the current instructions.
 
 ## Funktionen
 
@@ -89,30 +93,6 @@ docker compose logs -f vesim
 | Befehle | Proxy |
 | --- | --- |
 | ![Befehle](../docs/images/commands.jpg) | ![Proxy](../docs/images/console-proxy.jpg) |
-
-## Binärinstallation
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy-binary.sh | sh
-```
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/winniehu006/vesim/main/deploy-binary.sh | \
-  VESIM_DIR=/opt/vesim \
-  VESIM_VERSION=v2.1.35 \
-  VESIM_ARCH=linux_amd64 sh
-```
-
-| Datei | Plattform |
-| --- | --- |
-| `vesim_v2.1.35_linux_amd64` | x86_64, glibc + UPX |
-| `vesim_v2.1.35_linux_arm64` | ARM64 / Raspberry Pi OS 64-Bit, glibc + UPX |
-| `vesim_v2.1.35_linux_armv7` | 32-Bit-ARM, glibc + UPX |
-| `vesim_v2.1.35_openwrt_amd64` | OpenWrt x86_64, musl statisch, ohne UPX |
-| `vesim_v2.1.35_openwrt_arm64` | OpenWrt aarch64 |
-| `vesim_v2.1.35_openwrt_armv7` | OpenWrt 32-Bit-ARM |
-
-Unter OpenWrt nur `openwrt_*` verwenden. Siehe [packaging/openwrt/README.md](../packaging/openwrt/README.md).
 
 ## Konfiguration
 

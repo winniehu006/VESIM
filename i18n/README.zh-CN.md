@@ -8,7 +8,6 @@
 
 <p>
   <a href="https://github.com/winniehu006/vesim/releases/latest"><img src="https://img.shields.io/github/v/release/winniehu006/vesim" alt="Release"></a>
-  <a href="https://hub.docker.com/r/winniehu006/vesim"><img src="https://img.shields.io/badge/docker-winniehu006%2Fvesim-2496ED?logo=docker&logoColor=white" alt="Docker"></a>
   <a href="../go.mod"><img src="https://img.shields.io/badge/Go-1.26.4%2B-00ADD8?logo=go" alt="Go"></a>
   <a href="../web/package.json"><img src="https://img.shields.io/badge/Vue-3-42b883?logo=vue.js" alt="Vue 3"></a>
   <a href="../LICENSE"><img src="https://img.shields.io/static/v1?label=License&message=PolyForm%20NC%201.0.0&color=blue" alt="License: PolyForm Noncommercial 1.0.0"></a>
@@ -18,9 +17,9 @@
 
 通过浏览器或支持 MCP 的 AI 助手管理 USB 模组、蜂窝代理、短信、WiFi calling / IMS 通话、eSIM 和自动任务。
 
-> **VESIM** 是 [HiDeck](https://github.com/yibaiba/hideck) 的改名分支，基于上游 v2.1.35。网页控制台、后端与文档均来自 HiDeck，继续遵循 PolyForm Noncommercial 1.0.0 许可。本分支与上游作者无隶属或背书关系。
+> **VESIM** 是 [HiDeck](https://github.com/yibaiba/hideck) 的改名分支，基于上游 v2.1.35。网页控制台、后端与文档均来自 HiDeck，继续遵循 PolyForm Noncommercial 1.0.0 许可。本分支与上游作者无隶属或背书关系。本分支只发布 Windows 便携版：驱动真实模组（QMI/MBIM/AT、VoWiFi、USB 音频、按网卡绑定）需要 Linux 且拥有 USB 直通，模组部署请使用上游 HiDeck。
 
-[下载 v2.1.36](https://github.com/winniehu006/vesim/releases/tag/v2.1.36) · [更新记录](../CHANGELOG.md) · [接入 AI 助手](#mcp--ai-助手)
+[下载](https://github.com/winniehu006/VESIM/releases/latest) · [更新记录](../CHANGELOG.md) · [接入 AI 助手](#mcp--ai-助手)
 
 | | |
 | --- | --- |
@@ -52,7 +51,7 @@ WebDAV 备份与本地清理：[归档短信、通话记录与录音](../docs/we
 
 ## 快速开始（Windows）
 
-从[发布页](https://github.com/winniehu006/VESIM/releases/tag/v2.1.36)下载 `vesim_v2.1.36_windows_amd64.zip`，解压后运行 `start-vesim.bat`，浏览器打开 <http://localhost:7575>（默认 `admin` / `admin`，首次登录会要求修改）。免安装、免服务、无需 Linux 主机——本分支只发布这一个 Windows 便携包。
+从[发布页](https://github.com/winniehu006/VESIM/releases/latest)下载最新的 `vesim_*_windows_amd64.zip`，解压后运行 `start-vesim.bat`，浏览器打开 <http://localhost:7575>（默认 `admin` / `admin`，首次登录会要求修改）。免安装、免服务、无需 Linux 主机——本分支只发布这一个 Windows 便携包。
 
 也可以自己编译：
 
@@ -60,13 +59,14 @@ WebDAV 备份与本地清理：[归档短信、通话记录与录音](../docs/we
 .\build-windows.ps1
 ```
 
-脚本会编译前端与后端，生成 `dist\vesim_v2.1.36_windows_amd64.zip`。需要 Go 1.26+ 与 Node.js 20+，可用 `-GoBin` 指定 Go，用 `-SkipFrontend` 跳过已构建过的前端；不传 `-Version` 时版本号取自最新 git tag。
+脚本会编译前端与后端，生成 `dist\vesim_<tag>_windows_amd64.zip`，`<tag>` 取自最新 git tag（可用 `-Version` 覆盖）。需要 Go 1.26+ 与 Node.js 20+，可用 `-GoBin` 指定 Go，用 `-SkipFrontend` 跳过已复制到 `internal/web/dist` 的前端。
 
 Windows 下不会发现模组：QMI/MBIM/AT、VoWiFi、USB 音频、按网卡绑定出站和 udev 热插拔都需要 Linux 且拥有 USB 直通。
 
 ### 历史遗留：Linux / Docker / OpenWrt
 
-上游 HiDeck 的 Linux 相关文件仍在仓库中（`Dockerfile*`、`docker-compose*.yml`、`deploy*.sh`、`packaging/openwrt`、`packaging/fnos`、`Makefile`），它们仍是唯一能驱动真实模组硬件的部署方式，但本分支不再构建、发布或验证它们。模组部署请使用[上游 HiDeck](https://github.com/yibaiba/hideck)。
+上游 HiDeck 的 Linux 相关文件仍在仓库中（`Dockerfile*`、`docker-compose*.yml`、`deploy*.sh`、`packaging/openwrt`、`packaging/fnos`、`Makefile`），它们仍是唯一能驱动真实模组硬件的部署方式，但本分支不再构建、发布或验证它们。模组部署请使用[上游 HiDeck](https://github.com/yibaiba/hideck)。`deploy.sh` 与 `deploy-binary.sh` 现在会直接提示这一点并退出，不再因缺少发布产物而中途失败。
+
 ## MCP / AI 助手
 
 VESIM 内置远程 MCP 服务，采用 Streamable HTTP，与现有 HTTP/HTTPS 共用端口，地址为 `/mcp`，默认关闭。Agent 直接连接已经运行的 VESIM，无需在 Agent 所在机器另装 VESIM MCP 服务端。
@@ -120,7 +120,7 @@ VESIM 内置远程 MCP 服务，采用 Streamable HTTP，与现有 HTTP/HTTPS �
 本分支只产出 Windows 便携包：
 
 ```powershell
-.\build-windows.ps1                              # 前端 + 后端 + dist\vesim_v2.1.36_windows_amd64.zip
+.\build-windows.ps1                              # 前端 + 后端 + dist\vesim_<tag>_windows_amd64.zip
 .\build-windows.ps1 -GoBin C:\go\bin -SkipFrontend
 ```
 

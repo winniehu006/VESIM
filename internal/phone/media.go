@@ -58,8 +58,9 @@ type MediaManager struct {
 }
 
 // BoundUDPAddress reports the UDP address the ICE mux actually listens on. It
-// differs from the configured address when the configured port is busy and a
-// fallback port had to be used.
+// is the resolved form of the configured address — ":7580" becomes
+// "[::]:7580" on a dual-stack host — so it only differs in port when a
+// fallback port was used.
 func (m *MediaManager) BoundUDPAddress() string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -75,8 +76,8 @@ func NewMediaManager(options MediaOptions) (*MediaManager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("phone: listen WebRTC UDP mux on %s: %w", address, err)
 	}
-	if boundAddress != address {
-		logger.Warn(fmt.Sprintf("WebRTC UDP 端口 %s 被占用，已改用 %s", address, boundAddress))
+	if !sameUDPPort(address, boundAddress) {
+		logger.Warn(fmt.Sprintf("WebRTC UDP 端口 %s 不可用，已改用 %s", address, boundAddress))
 	}
 	mux := webrtc.NewICEUDPMux(nil, connection)
 	publicHost := newWebRTCPublicHost(options.PublicHost, options.LookupIPAddr)
@@ -104,6 +105,25 @@ func NewMediaManager(options MediaOptions) (*MediaManager, error) {
 		newRealtimeCodec: options.NewRealtimeCodec,
 		onState:          options.OnState, sessions: make(map[string]*MediaSession),
 	}, nil
+}
+
+// sameUDPPort reports whether the socket ended up on the requested port. The
+// textual form differs routinely — ":7580" is reported as "[::]:7580" on a
+// dual-stack host — so comparing addresses alone would warn on every start. A
+// configured port of 0 means "any free port" and never warrants a warning.
+func sameUDPPort(configured, bound string) bool {
+	_, configuredPort, err := net.SplitHostPort(configured)
+	if err != nil {
+		return configured == bound
+	}
+	if configuredPort == "0" {
+		return true
+	}
+	_, boundPort, err := net.SplitHostPort(bound)
+	if err != nil {
+		return false
+	}
+	return configuredPort == boundPort
 }
 
 // listenWebRTCUDP binds the ICE UDP mux, preferring the configured port. When
