@@ -22,7 +22,13 @@
 | Node.js | 20+ | 仅在需要重新编译前端时必需 |
 | PowerShell | 5.1 或 7 | 运行 `build-windows.ps1` |
 
-构建为 `CGO_ENABLED=0`、`GOOS=windows`、`GOARCH=amd64`，编译标签 `with_utls nomsgpack`，因此不需要额外 C 工具链。
+构建为 `CGO_ENABLED=0`、`GOOS=windows`、`GOARCH=amd64`，因此不需要额外 C 工具链。前端 `npm run build` 实为 `typecheck && vite build`（前端约 397 个测试）。后端实际命令：
+
+```bash
+go build -trimpath -buildvcs=false -tags "with_utls nomsgpack" \
+  -ldflags "-s -w -X 'github.com/winniehu006/vesim/internal/global.Version=<版本>' -X '.../global.BuildTime=<时间>'" \
+  -o dist/vesim.exe ./cmd/vesim
+```
 
 ### 2.2 构建命令
 
@@ -107,15 +113,15 @@ git push origin refs/tags/vX.Y.Z
 
 > 网络不稳定时 `git push` 可能超时，重试即可；凭据由 Git Credential Manager 临时提供，用完后应吊销使用过的 PAT。
 
-仓库元信息（description、homepage、topics）应指向 Windows 便携版定位；README / 中文 README 顶部提供四份文档导航，下载统一使用 `releases/latest`。
+仓库元信息现状（GitHub API 实测）：description = `Windows portable web console for Qualcomm 4G/5G modem management — renamed fork of HiDeck`；homepage = `https://github.com/winniehu006/VESIM/releases/latest`；topics = `esim, golang, modem, quectel, self-hosted, sms, vowifi, vue, windows`。README / 中文 README 顶部提供四份文档导航，下载统一使用 `releases/latest`。
 
 ## 5. 数据与升级维护
 
 - **状态目录**：`config\`、`data\`、`logs\` 都要保留；升级时替换 `vesim.exe`、`start-vesim.bat` 等发布文件即可。
-- **数据库**：`data\vesim.db`（及 `-wal`、`-shm`）。2.1.37 起初始化前自动创建父目录；GORM 负责迁移。修改表结构需新增迁移逻辑并验证旧库可升级。
+- **数据库**：`data\vesim.db`（及 `-wal`、`-shm`）。2.1.37 起初始化前自动创建父目录；驱动由 `VESIM_SQLITE_DRIVER` 选择，默认 `modernc`，连接池 `MaxOpenConns(1)`；PRAGMA 为 `busy_timeout=5000`、`journal_mode=WAL`、`synchronous=NORMAL`、`foreign_keys=ON`。`AutoMigrate` 覆盖约 28 个模型，并按顺序执行短信身份、联系人 ID、国家规则主键、ICCID 重键、卡策略规范化等自定义迁移。修改表结构需新增迁移逻辑并验证旧库可升级。
 - **国家表缓存**：`data\mcc-mnc-table.json`，启动时多源下载；离线时按未知国家直连。
 - **录音 / MBN / 自动接听音频 / TLS 证书**：分别在 `data\recordings\voice\`、`data\mbn\`、`data\phone\auto-answer.wav`、`data\tls\`；MCP 令牌只存摘要与元数据于 `mcp_tokens` 表。
-- **日志**：`logs\app-YYYY-MM-DD.log` 按天轮转、保留 30 天；`logs\app.log` 为入口（Windows 无权限创建软链时跳过）。
+- **日志**：`logs\app-YYYY-MM-DD.log` 按天轮转、保留 30 天，同时输出到控制台、文件与 SSE 实时日志；`logs\app.log` 为入口（Windows 无创建符号链接权限时跳过软链）。
 - **备份**：使用「设置 → WebDAV 归档」增量归档短信 / 通话 / 录音，或手工复制 `config\` 与 `data\`。归档台账保存在本地数据库中，清理需先预览再确认。
 
 ## 6. 平台限制与已知问题
