@@ -16,6 +16,10 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGING = ROOT / "packaging/fnos"
+# This fork publishes the Windows portable package only; the fnOS workflow that
+# this contract check guards was removed.
+FNOS_WORKFLOW_REMOVED = not (ROOT / ".github/workflows/fnos-package.yml").exists()
+WORKFLOW_REMOVED_REASON = "fnOS release workflow is not part of this fork"
 sys.path.insert(0, str(PACKAGING))
 SPEC = importlib.util.spec_from_file_location("fnos_build", PACKAGING / "build.py")
 BUILD = importlib.util.module_from_spec(SPEC)
@@ -68,6 +72,7 @@ class FnOSTests(unittest.TestCase):
             with self.assertRaises(argparse.ArgumentTypeError):
                 BUILD.http_port(value)
 
+    @unittest.skipIf(FNOS_WORKFLOW_REMOVED, WORKFLOW_REMOVED_REASON)
     def test_release_workflow_uploads_fpk_to_existing_release(self):
         workflow = (ROOT / ".github/workflows/fnos-package.yml").read_text()
         caller = (ROOT / ".github/workflows/docker-publish.yml").read_text()

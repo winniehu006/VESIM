@@ -10,6 +10,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGING = ROOT / "packaging/openwrt"
+WORKFLOWS = ROOT / ".github/workflows"
+# This fork publishes the Windows portable package only and has dropped the
+# Linux/OpenWrt release workflows these contract checks guard.
+WORKFLOWS_REMOVED = "Linux/OpenWrt release workflows are not part of this fork"
 
 
 class OpenWrtTests(unittest.TestCase):
@@ -31,6 +35,7 @@ class OpenWrtTests(unittest.TestCase):
         self.assertIn("Build/Compile/Default,-j$(VESIM_ADB_JOBS) adb", recipe)
         self.assertIn("CMAKE_BINARY_SUBDIR:=build", recipe)
 
+    @unittest.skipUnless((WORKFLOWS / "openwrt-packages.yml").exists(), WORKFLOWS_REMOVED)
     def test_sdk_workflows_share_verified_downloads(self):
         for name in ("binary-release.yml", "openwrt-packages.yml"):
             source = (ROOT / ".github/workflows" / name).read_text()
@@ -97,6 +102,7 @@ class OpenWrtTests(unittest.TestCase):
         self.assertIn(r"arm:*ELF\ 32-bit*ARM*", script)
         self.assertIn(r"aarch64:*ELF\ 64-bit*aarch64*", script)
 
+    @unittest.skipUnless((WORKFLOWS / "binary-release.yml").exists(), WORKFLOWS_REMOVED)
     def test_release_publishes_dynamic_binary_without_changing_package_input(self):
         release = (ROOT / ".github/workflows/binary-release.yml").read_text()
         packages = (ROOT / ".github/workflows/openwrt-packages.yml").read_text()

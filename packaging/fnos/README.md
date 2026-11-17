@@ -1,5 +1,9 @@
 # 飞牛 fnOS 应用包
 
+> **本分支不构建、不发布 fnOS 包。** VESIM 只发布 Windows 便携包，本文档和脚本保留供参考；
+> `.github/workflows/fnos-package.yml` 与 `docker-publish.yml` 已移除，需要 fnOS 包请使用
+> [上游 HiDeck](https://github.com/yibaiba/hideck)。
+
 本目录生成供飞牛应用中心手动安装测试的 `.fpk`，内部复用 `winniehu006/vesim:<版本>@sha256:<摘要>` Docker 镜像，不是第二套电话/VoWiFi 实现。尚未完成 fnOS 真机安装、升级、USB 热插拔和通话验收，也不代表已上架飞牛应用中心。
 
 实现依据：[官方 Docker 应用案例](https://developer.fnnas.com/docs/examples/docker/)、[环境变量](https://developer.fnnas.com/docs/core-concepts/environment-variables/)、[应用入口](https://developer.fnnas.com/docs/core-concepts/app-entry/)、[fnpack](https://developer.fnnas.com/docs/cli/fnpack/)。

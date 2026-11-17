@@ -1,5 +1,9 @@
 # OpenWrt 安装与打包
 
+> **本分支不构建、不发布 OpenWrt 产物。** VESIM 只发布 Windows 便携包，本文档保留供参考；
+> `.github/workflows/openwrt-packages.yml` 与 `binary-release.yml` 已移除，下文提到的自动构建
+> 步骤在本仓库中不可用，需要 OpenWrt 包请使用[上游 HiDeck](https://github.com/yibaiba/hideck)。
+
 OpenWrt 必须使用 musl 构建、无 UPX 的程序，不能使用依赖 glibc 的 `linux_*`。Release 同时发布静态 `vesim_*_openwrt_*` 和动态 `vesim_*_openwrt_dynamic_*` 二进制；IPK/APK 安装包和二进制安装脚本继续使用静态版本。需要通话 MP3 编码时，按下文要求使用动态版本。程序及语音资源体积较大，小闪存设备需要 extroot；不提供 MIPS 包。
 
 ## 三个独立安装包
