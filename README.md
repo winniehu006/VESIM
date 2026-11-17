@@ -20,7 +20,7 @@ Manage USB modems, cellular proxy, SMS, WiFi calling / IMS voice, eSIM, and sche
 
 > **VESIM** is a renamed fork of [HiDeck](https://github.com/yibaiba/hideck), based on upstream v2.1.35. The web console, backend and documentation are derived from HiDeck and remain under the PolyForm Noncommercial 1.0.0 license. This fork is not affiliated with or endorsed by the upstream author.
 
-[Download v2.1.35](https://github.com/winniehu006/vesim/releases/tag/v2.1.35) · [Changelog](CHANGELOG.md) · [Connect an AI assistant](#mcp--ai-assistants)
+[Download v2.1.36](https://github.com/winniehu006/vesim/releases/tag/v2.1.36) · [Changelog](CHANGELOG.md) · [Connect an AI assistant](#mcp--ai-assistants)
 
 | | |
 | --- | --- |
@@ -52,7 +52,7 @@ WebDAV backup and safe local cleanup: [archive SMS, calls and recordings](docs/w
 
 ## Quick start (Windows)
 
-Download `vesim_v2.1.35_windows_amd64.zip` from [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35), unzip it anywhere, run `start-vesim.bat`, then open <http://localhost:7575> (default `admin` / `admin`, change on first sign-in). No installer, no service, no Linux host required — the Windows portable zip is the only release artifact this fork publishes.
+Download `vesim_v2.1.36_windows_amd64.zip` from [Releases](https://github.com/winniehu006/VESIM/releases/tag/v2.1.36), unzip it anywhere, run `start-vesim.bat`, then open <http://localhost:7575> (default `admin` / `admin`, change on first sign-in). No installer, no service, no Linux host required — the Windows portable zip is the only release artifact this fork publishes.
 
 Or build it yourself:
 
@@ -60,7 +60,7 @@ Or build it yourself:
 .\build-windows.ps1
 ```
 
-The script compiles the Vue frontend and the Go backend and writes `dist\vesim_v2.1.35_windows_amd64.zip`. It needs Go 1.26+ and Node.js 20+; use `-GoBin <path>` when Go is not on `PATH`, and `-SkipFrontend` when `web/` was already built.
+The script compiles the Vue frontend and the Go backend and writes `dist\vesim_v2.1.36_windows_amd64.zip`. It needs Go 1.26+ and Node.js 20+; use `-GoBin <path>` when Go is not on `PATH`, and `-SkipFrontend` when `web/` was already built. When `-Version` is omitted the newest git tag decides the version.
 
 On Windows the console starts with no devices — QMI/MBIM/AT access, VoWiFi, USB audio, host-network proxy binding and udev hot-plug need Linux with host USB access.
 
@@ -124,7 +124,7 @@ Do not commit secrets. SIM PIN fields store environment variable *names* only (`
 Windows portable is the only artifact this fork produces.
 
 ```powershell
-.\build-windows.ps1                              # frontend + backend + dist\vesim_v2.1.35_windows_amd64.zip
+.\build-windows.ps1                              # frontend + backend + dist\vesim_v2.1.36_windows_amd64.zip
 .\build-windows.ps1 -GoBin C:\go\bin -SkipFrontend
 ```
 

@@ -1,7 +1,9 @@
 # Builds a self-contained VESIM executable and portable zip for Windows.
-# Usage: .\scripts\build-windows.ps1 [-Version v2.1.35] [-SkipFrontend]
+# Usage: .\build-windows.ps1 [-Version v2.1.36] [-GoBin <path>] [-SkipFrontend]
+# When -Version is omitted the newest git tag is used, so the package name
+# follows the release being built instead of a hard-coded constant.
 param(
-  [string]$Version = "v2.1.35",
+  [string]$Version = "",
   [string]$GoBin = "",
   [switch]$SkipFrontend
 )
@@ -9,6 +11,16 @@ param(
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 Set-Location $root
+
+if (-not $Version) {
+  $latestTag = (git describe --tags --abbrev=0 2>$null)
+  if ($LASTEXITCODE -eq 0 -and $latestTag) {
+    $Version = $latestTag.Trim()
+  } else {
+    $Version = "v0.0.0-dev"
+  }
+}
+if (-not $Version.StartsWith("v")) { $Version = "v$Version" }
 
 if ($GoBin) { $env:PATH = "$GoBin;$env:PATH" }
 $go = Get-Command go -ErrorAction SilentlyContinue

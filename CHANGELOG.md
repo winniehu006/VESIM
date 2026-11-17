@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.1.36 - 2026-11-17
+
+首个独立命名的 VESIM 版本，界面与功能沿用 HiDeck 2.1.35。
+
+### 发布
+
+- 只发布 Windows 便携包 `vesim_v2.1.36_windows_amd64.zip`，解压运行 `start-vesim.bat` 即可使用。
+- 新增 `.github/workflows/windows-release.yml`：推送 `v*` tag 即在 Windows Runner 上构建并上传产物与 `.sha256`。
+- `build-windows.ps1` 的版本号默认取自最新 git tag，不再写死常量。
+- 移除 Linux / OpenWrt / fnOS / Docker 的构建与发布 workflow；相关打包脚本保留在仓库中供参考。
+
+### 修复
+
+- WebRTC 媒体端口 `:7580` 被占用时不再终止启动，改为顺延尝试后续端口并记录实际监听地址。
+
 ## 2.1.35 - 2026-10-25
 
 ### MCP

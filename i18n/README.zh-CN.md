@@ -20,7 +20,7 @@
 
 > **VESIM** 是 [HiDeck](https://github.com/yibaiba/hideck) 的改名分支，基于上游 v2.1.35。网页控制台、后端与文档均来自 HiDeck，继续遵循 PolyForm Noncommercial 1.0.0 许可。本分支与上游作者无隶属或背书关系。
 
-[下载 v2.1.35](https://github.com/winniehu006/vesim/releases/tag/v2.1.35) · [更新记录](../CHANGELOG.md) · [接入 AI 助手](#mcp--ai-助手)
+[下载 v2.1.36](https://github.com/winniehu006/vesim/releases/tag/v2.1.36) · [更新记录](../CHANGELOG.md) · [接入 AI 助手](#mcp--ai-助手)
 
 | | |
 | --- | --- |
@@ -52,7 +52,7 @@ WebDAV 备份与本地清理：[归档短信、通话记录与录音](../docs/we
 
 ## 快速开始（Windows）
 
-从[发布页](https://github.com/winniehu006/VESIM/releases/tag/v2.1.35)下载 `vesim_v2.1.35_windows_amd64.zip`，解压后运行 `start-vesim.bat`，浏览器打开 <http://localhost:7575>（默认 `admin` / `admin`，首次登录会要求修改）。免安装、免服务、无需 Linux 主机——本分支只发布这一个 Windows 便携包。
+从[发布页](https://github.com/winniehu006/VESIM/releases/tag/v2.1.36)下载 `vesim_v2.1.36_windows_amd64.zip`，解压后运行 `start-vesim.bat`，浏览器打开 <http://localhost:7575>（默认 `admin` / `admin`，首次登录会要求修改）。免安装、免服务、无需 Linux 主机——本分支只发布这一个 Windows 便携包。
 
 也可以自己编译：
 
@@ -60,7 +60,7 @@ WebDAV 备份与本地清理：[归档短信、通话记录与录音](../docs/we
 .\build-windows.ps1
 ```
 
-脚本会编译前端与后端，生成 `dist\vesim_v2.1.35_windows_amd64.zip`。需要 Go 1.26+ 与 Node.js 20+，可用 `-GoBin` 指定 Go，用 `-SkipFrontend` 跳过已构建过的前端。
+脚本会编译前端与后端，生成 `dist\vesim_v2.1.36_windows_amd64.zip`。需要 Go 1.26+ 与 Node.js 20+，可用 `-GoBin` 指定 Go，用 `-SkipFrontend` 跳过已构建过的前端；不传 `-Version` 时版本号取自最新 git tag。
 
 Windows 下不会发现模组：QMI/MBIM/AT、VoWiFi、USB 音频、按网卡绑定出站和 udev 热插拔都需要 Linux 且拥有 USB 直通。
 
@@ -120,7 +120,7 @@ VESIM 内置远程 MCP 服务，采用 Streamable HTTP，与现有 HTTP/HTTPS �
 本分支只产出 Windows 便携包：
 
 ```powershell
-.\build-windows.ps1                              # 前端 + 后端 + dist\vesim_v2.1.35_windows_amd64.zip
+.\build-windows.ps1                              # 前端 + 后端 + dist\vesim_v2.1.36_windows_amd64.zip
 .\build-windows.ps1 -GoBin C:\go\bin -SkipFrontend
 ```
 
